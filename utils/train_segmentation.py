@@ -26,8 +26,8 @@ parser.add_argument(
     '--nepoch', type=int, default=25, help='number of epochs to train for')
 parser.add_argument('--outf', type=str, default='seg', help='output folder')
 parser.add_argument('--model', type=str, default='', help='model path')
-parser.add_argument('--dataset', type=str, required=True, help="dataset path",
-                    default='/Users/Maurits/ML/data/shapenetcore_partanno_segmentation_benchmark_v0/02691156')
+parser.add_argument('--dataset', type=str, required=False, help="dataset path",
+                    default='/Users/Maurits/ML/data/shapenetcore_partanno_segmentation_benchmark_v0/02691156/')
 
 parser.add_argument('--class_choice', type=str, default='Chair', help="class_choice")
 parser.add_argument('--feature_transform', action='store_true', help="use feature transform")
