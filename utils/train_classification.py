@@ -1,3 +1,4 @@
+import sys
 from __future__ import print_function
 import argparse
 import os
@@ -6,10 +7,13 @@ import torch
 import torch.nn.parallel
 import torch.optim as optim
 import torch.utils.data
-from pointnet.dataset import ShapeNetDataset, ModelNetDataset
-from pointnet.model import PointNetCls, feature_transform_regularizer
 import torch.nn.functional as F
 from tqdm import tqdm
+
+sys.path.append("..")
+
+from pointnet.dataset import ShapeNetDataset, ModelNetDataset
+from pointnet.model import PointNetCls, feature_transform_regularizer
 
 
 parser = argparse.ArgumentParser()

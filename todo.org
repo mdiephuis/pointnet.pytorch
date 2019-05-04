@@ -1,0 +1,18 @@
+* General todo
+- [X] Enable tensorboard support
+- [X] Add cuda argparse
+- [ ] Check compatibility Pytorch
+    - [ ] Remove legacy Variable code
+    - [ ] Remove autograd code
+- [X] Added hard coded default data url
+- [X] Fixed relative imports
+
+
+* Auto-encoder
+- [ ] Basic auto-encoder trial
+- [ ] New loss
+
+
+* Datasets
+- [ ] New dataloaders for testing set Margo. 
+- [ ] 
