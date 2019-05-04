@@ -27,12 +27,20 @@ parser.add_argument(
 parser.add_argument('--outf', type=str, default='seg', help='output folder')
 parser.add_argument('--model', type=str, default='', help='model path')
 parser.add_argument('--dataset', type=str, required=False, help="dataset path",
-                    default='/Users/Maurits/ML/data/shapenetcore_partanno_segmentation_benchmark_v0/02691156/')
+                    default='/Users/Maurits/ML/data/shapenetcore_partanno_segmentation_benchmark_v0/')
 
 parser.add_argument('--class_choice', type=str, default='Chair', help="class_choice")
 parser.add_argument('--feature_transform', action='store_true', help="use feature transform")
 
+# Device (GPU)
+parser.add_argument('--no-cuda', action='store_true', default=False,
+                    help='disables cuda (default: False')
+
+
 opt = parser.parse_args()
+
+opt.use_cuda = not opt.no_cuda and torch.cuda.is_available()
+
 print(opt)
 
 opt.manualSeed = random.randint(1, 10000)  # fix seed
@@ -80,7 +88,10 @@ if opt.model != '':
 
 optimizer = optim.Adam(classifier.parameters(), lr=0.001, betas=(0.9, 0.999))
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.5)
-classifier.cuda()
+
+
+if opt.use_cuda:
+    classifier.cuda()
 
 num_batch = len(dataset) / opt.batchSize
 
@@ -89,7 +100,10 @@ for epoch in range(opt.nepoch):
     for i, data in enumerate(dataloader, 0):
         points, target = data
         points = points.transpose(2, 1)
-        points, target = points.cuda(), target.cuda()
+
+        if opt.use_cuda:
+            points, target = points.cuda(), target.cuda()
+
         optimizer.zero_grad()
         classifier = classifier.train()
         pred, trans, trans_feat = classifier(points)
@@ -109,7 +123,10 @@ for epoch in range(opt.nepoch):
             j, data = next(enumerate(testdataloader, 0))
             points, target = data
             points = points.transpose(2, 1)
-            points, target = points.cuda(), target.cuda()
+
+            if opt.use_cuda:
+                points, target = points.cuda(), target.cuda()
+
             classifier = classifier.eval()
             pred, _, _ = classifier(points)
             pred = pred.view(-1, num_classes)
@@ -126,7 +143,10 @@ shape_ious = []
 for i,data in tqdm(enumerate(testdataloader, 0)):
     points, target = data
     points = points.transpose(2, 1)
-    points, target = points.cuda(), target.cuda()
+
+    if opt.use_cuda:
+        points, target = points.cuda(), target.cuda()
+    
     classifier = classifier.eval()
     pred, _, _ = classifier(points)
     pred_choice = pred.data.max(2)[1]
