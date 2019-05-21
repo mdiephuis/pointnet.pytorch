@@ -10,9 +10,10 @@
 
 * Auto-encoder
 - [ ] Basic auto-encoder trial
-- [ ] New loss
+- [ ] New loss, probably a combo of TV Loss + MSE loss
 
 
 * Datasets
-- [ ] New dataloaders for testing set Margo. 
-- [ ] 
+- [ ] New dataloaders for testing set Margo 
+- [ ] Add simple noise to point clouds
+- [ ] Modify the dataloaders, so the X - > noisy clouds, y -> noiseless clouds.
