@@ -8,6 +8,7 @@ import sys
 from tqdm import tqdm 
 import json
 from plyfile import PlyData, PlyElement
+from gaussian_noise import AddGaussianNoise
 
 def get_segmentation_classes(root):
     catfile = os.path.join(root, 'synsetoffset2category.txt')
@@ -58,6 +59,7 @@ class ShapeNetDataset(data.Dataset):
                  root,
                  npoints=2500,
                  classification=False,
+                 denoising = False,
                  class_choice=None,
                  split='train',
                  data_augmentation=True):
@@ -67,6 +69,7 @@ class ShapeNetDataset(data.Dataset):
         self.cat = {}
         self.data_augmentation = data_augmentation
         self.classification = classification
+        self.denoising = denoising
         self.seg_classes = {}
         
         with open(self.catfile, 'r') as f:
@@ -121,12 +124,13 @@ class ShapeNetDataset(data.Dataset):
         dist = np.max(np.sqrt(np.sum(point_set ** 2, axis = 1)),0)
         point_set = point_set / dist #scale
 
+
         if self.data_augmentation:
             theta = np.random.uniform(0,np.pi*2)
             rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],[np.sin(theta), np.cos(theta)]])
             point_set[:,[0,2]] = point_set[:,[0,2]].dot(rotation_matrix) # random rotation
             point_set += np.random.normal(0, 0.02, size=point_set.shape) # random jitter
-
+        point_set_noisy = AddGaussianNoise(point_set)
         seg = seg[choice]
         point_set = torch.from_numpy(point_set)
         seg = torch.from_numpy(seg)
@@ -134,6 +138,8 @@ class ShapeNetDataset(data.Dataset):
 
         if self.classification:
             return point_set, cls
+        elif self.denoising:
+            return point_set_noisy, point_set
         else:
             return point_set, seg
 
