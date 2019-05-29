@@ -134,6 +134,7 @@ class ShapeNetDataset(data.Dataset):
         seg = seg[choice]
         point_set = torch.from_numpy(point_set)
         seg = torch.from_numpy(seg)
+        point_set_noisy = torch.from_numpy(point_set_noisy)
         cls = torch.from_numpy(np.array([cls]).astype(np.int64))
 
         if self.classification:
@@ -202,10 +203,11 @@ if __name__ == '__main__':
     datapath = sys.argv[2]
 
     if dataset == 'shapenet':
-        d = ShapeNetDataset(root = datapath, class_choice = ['Chair'])
+        d = ShapeNetDataset(root = datapath, class_choice = ['Chair'], denoising =True)
         print(len(d))
         ps, seg = d[0]
         print(ps.size(), ps.type(), seg.size(),seg.type())
+
 
         d = ShapeNetDataset(root = datapath, classification = True)
         print(len(d))
