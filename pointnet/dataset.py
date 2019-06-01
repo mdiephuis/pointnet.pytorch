@@ -8,7 +8,7 @@ import sys
 from tqdm import tqdm 
 import json
 from plyfile import PlyData, PlyElement
-from gaussian_noise import AddGaussianNoise
+from gaussian_noise import add_gaussian_noise
 
 def get_segmentation_classes(root):
     catfile = os.path.join(root, 'synsetoffset2category.txt')
@@ -130,7 +130,7 @@ class ShapeNetDataset(data.Dataset):
             rotation_matrix = np.array([[np.cos(theta), -np.sin(theta)],[np.sin(theta), np.cos(theta)]])
             point_set[:,[0,2]] = point_set[:,[0,2]].dot(rotation_matrix) # random rotation
             point_set += np.random.normal(0, 0.02, size=point_set.shape) # random jitter
-        point_set_noisy = AddGaussianNoise(point_set)
+        point_set_noisy = add_gaussian_noise(point_set)
         seg = seg[choice]
         point_set = torch.from_numpy(point_set)
         seg = torch.from_numpy(seg)
