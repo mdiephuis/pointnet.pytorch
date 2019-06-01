@@ -6,6 +6,8 @@ models/
 output/
 notebooks/
 
+utils/seg/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
