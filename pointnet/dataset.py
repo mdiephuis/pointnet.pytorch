@@ -8,7 +8,8 @@ import sys
 from tqdm import tqdm 
 import json
 from plyfile import PlyData, PlyElement
-from gaussian_noise import add_gaussian_noise
+
+from pointnet.gaussian_noise import add_gaussian_noise
 
 def get_segmentation_classes(root):
     catfile = os.path.join(root, 'synsetoffset2category.txt')

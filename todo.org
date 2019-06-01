@@ -1,19 +1,29 @@
 * General todo
-- [X] Enable tensorboard support
 - [X] Add cuda argparse
 - [ ] Check compatibility Pytorch
     - [ ] Remove legacy Variable code
     - [ ] Remove autograd code
 - [X] Added hard coded default data url
 - [X] Fixed relative imports
+- [ ] Enable tensorboard support
+- [ ] Test and enable cuda
+- [ ] Check point-cloud visualizers
+- [ ] Move to Gauss
+- [ ] Refractor into execute_graph and train_validate functions
 
 
 * Auto-encoder
 - [ ] Basic auto-encoder trial
 - [ ] New loss, probably a combo of TV Loss + MSE loss
+- [ ] Setup basic encoder / decoder architectures for (V)AE
+- [ ] 
+
+
+* Bugs
+- [X] clamped and rescaled the gaussian noise 
 
 
 * Datasets
 - [ ] New dataloaders for testing set Margo 
-- [ ] Add simple noise to point clouds
-- [ ] Modify the dataloaders, so the X - > noisy clouds, y -> noiseless clouds.
+- [X] Add simple noise to point clouds
+- [X] Modify the dataloaders, so the X - > noisy clouds, y -> noiseless clouds.
