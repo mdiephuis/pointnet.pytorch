@@ -3,9 +3,19 @@ import torch
 import torch.nn as nn
 import torch.nn.parallel
 import torch.utils.data
-from torch.autograd import Variable
 import numpy as np
-import torch.nn.functional as F
+from torch.nn import init
+
+
+def init_weights(module):
+    for m in module.modules():
+        if isinstance(m, nn.Linear) or isinstance(m, nn.ConvTranspose2d):
+            init.xavier_uniform_(m.weight.data)
+            if hasattr(m, 'bias') and m.bias is not None:
+                init.constant_(m.bias, 0.0)
+        elif isinstance(m, nn.Sequential):
+            for sub_mod in m:
+                init_weights(sub_mod)
 
 
 class Conv1dBR(nn.Module):
@@ -66,10 +76,13 @@ class LinearBR(nn.Module):
 
 
 def stn_encoder_decoder(input_shape, encoder_size, decoder_size, latent_size):
-    encoder = nn.ModuleList([
-        Conv1dBR(input_shape, encoder_size // 64),
-        Conv1dBR(encoder_size // 64, encoder_size // 32),
-        Conv1dBR(encoder_size // 32, encoder_size),
+    conv_encoder = nn.ModuleList([
+        Conv1dBR(input_shape, encoder_size // 16),
+        Conv1dBR(encoder_size // 16, encoder_size // 8),
+        Conv1dBR(encoder_size // 8, encoder_size),
+    ])
+
+    lin_encoder = nn.ModuleList([
         LinearBR(encoder_size, encoder_size // 2),
         LinearBR(encoder_size // 2, encoder_size // 4),
     ])
@@ -78,26 +91,32 @@ def stn_encoder_decoder(input_shape, encoder_size, decoder_size, latent_size):
         LinearBR(latent_size, decoder_size // 4),
         LinearBR(decoder_size // 4, decoder_size // 2),
         LinearBR(decoder_size // 2, decoder_size),
-        Conv1TransBR(decoder_size, decoder_size // 32),
-        Conv1TransBR(decoder_size // 32, decoder_size // 64),
-        Conv1TransBR(decoder_size // 64, input_shape),
+        Conv1TransBR(decoder_size, decoder_size // 8),
+        Conv1TransBR(decoder_size // 8, decoder_size // 16),
+        Conv1TransBR(decoder_size // 16, input_shape),
     ])
 
-    return encoder, decoder
+    return conv_encoder, lin_encoder, decoder
 
 
 class STNVAE(nn.Module):
     def __init__(self, input_shape, encoder_size, decoder_size, latent_size):
         super(STNVAE, self).__init__()
-        self.input_shape = np.prod(list(input_shape))
+        if isinstance(input_shape, list) or isinstance(input_shape, tuple):
+            self.input_shape = np.prod(list(input_shape))
+        else:
+            self.input_shape = input_shape
         self.encoder_size = encoder_size
         self.decoder_size = decoder_size
         self.latent_size = latent_size
 
-        self.encoder, self.decoder = stn_encoder_decoder(self.input_shape, self.encoder_size,
-                                                         self.decoder_size, self.latent_size)
+        self.conv_encoder, self.lin_encoder, self.decoder = stn_encoder_decoder(
+            self.input_shape, self.encoder_size, self.decoder_size, self.latent_size)
 
-        self.encoder_mu = LinearBR(self.encoder_size // 4, self.latent_size)
+        self.encoder_mu = nn.ModuleList([
+            LinearBR(self.encoder_size // 4, self.latent_size),
+            nn.ReLU()
+        ])
 
         self.encoder_std = nn.ModuleList([
             LinearBR(encoder_size // 4, latent_size),
@@ -106,10 +125,19 @@ class STNVAE(nn.Module):
         ])
 
     def encode(self, x):
-        for layer in self.encoder:
+
+        for layer in self.conv_encoder:
             x = layer(x)
 
-        mu = self.encoder_mu(x)
+        x = torch.max(x, 2, keepdim=True)[0]
+        x = x.view(-1, encoder_size)
+
+        for layer in self.lin_encoder:
+            x = layer(x)
+
+        mu = x
+        for layer in self.encoder_mu:
+            mu = layer(mu)
 
         std = x
         for layer in self.encoder_std:
@@ -134,3 +162,18 @@ class STNVAE(nn.Module):
         z = self.reparameterize(mu, std)
         x_hat = self.decode(z)
         return x_hat, mu, std
+
+
+if __name__ == '__main__':
+    x = torch.randn(32, 3, 2500)
+    input_shape = [3]
+    encoder_size = 1024
+    decoder_size = 1024
+    latent_size = 9
+
+    model = STNVAE(input_shape, encoder_size, decoder_size, latent_size)
+    model.apply(init_weights)
+
+    x_hat, z_mu, z_std = model(x)
+
+    print('Output x_hat size: {}'.format(x_hat.size()))
