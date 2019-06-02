@@ -16,7 +16,7 @@
 - [ ] Basic auto-encoder trial
 - [ ] New loss, probably a combo of TV Loss + MSE loss
 - [ ] Setup basic encoder / decoder architectures for (V)AE
-- [ ] 
+- [ ] Make an if __main__ switch in the vae_models to unit check
 
 
 * Bugs
