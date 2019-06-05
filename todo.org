@@ -20,7 +20,7 @@
 
 
 * Bugs
-- [X] clamped and rescaled the gaussian noise 
+- [X] clamped and rescaled the gaussian noise
 
 
 * Datasets
