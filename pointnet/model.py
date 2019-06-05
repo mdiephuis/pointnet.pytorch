@@ -187,37 +187,60 @@ if __name__ == '__main__':
     sim_data = Variable(torch.rand(32,3,2500))
     trans = STN3d()
     out = trans(sim_data)
+    print('STN3d')
     print('sim_data stn in ', sim_data.size())
     print('stn out', out.size())
+    print('----------------------------------------')
     # print('loss', feature_transform_regularizer(out))
 
     sim_data_64d = Variable(torch.rand(32, 64, 2500))
     trans = STNkd(k=64)
     out = trans(sim_data_64d)
+    print('STNkd')
     print('sim_data64 stn64d in ', sim_data_64d.size())
     print('stn64d out', out.size())
+    print('----------------------------------------')
     # print('loss', feature_transform_regularizer(out))
 
     pointfeat = PointNetfeat(global_feat=True)
     out, _, _ = pointfeat(sim_data)
+    print('PointNetfeat + pointfeat')
     print('sim_data global feat in', sim_data.size())
     print('global feat out', out.size())
+    print('----------------------------------------')
 
     pointfeat = PointNetfeat(global_feat=False)
     out, _, _ = pointfeat(sim_data)
+    print('PointNetfeat + pointfeat')
     print('sim_data point feat in', sim_data.size())
     print('point feat out', out.size())
+    print('----------------------------------------')
 
-    # cls = PointNetCls(k = 5)
-    # out, _, _ = cls(sim_data)
-    # print('class', out.size())
 
-    seg = PointNetDenseCls(k = 3)
-    out, _, _ = seg(sim_data)
+    cls = PointNetCls(k=5)
+    out, _, _ = cls(sim_data)
+    print('PointNetCls classes')
+    print('class', out.size())
+    print('----------------------------------------')
+
+
+    seg = PointNetDenseCls(k=3)
+    x_out, trans_out, trans_feat_out = seg(sim_data)
+    print('PointNetDenseCls')
     print('sim_data seg in', sim_data.size())
-    print('seg out', out.size())
 
+    print('Output dim, x_out: {}'.format(x_out.size()))
+    print('Check output x')
+    print(x_out[:1, :])
 
-'''
-(V)AE models and utilities
-'''
+    if trans_out is not None:
+        print('Output dim, trans_out: {}'.format(trans_out.size()))
+    else:
+        print('trans_out was None')
+
+    if trans_feat_out is not None:
+        print('Output dim, trans_feat_out: {}'.format(trans_feat_out.size()))
+    else:
+        print('trans_feat_out was None')
+
+    print('----------------------------------------')
