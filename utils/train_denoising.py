@@ -27,7 +27,7 @@ parser.add_argument(
 parser.add_argument('--outf', type=str, default='seg', help='output folder')
 parser.add_argument('--model', type=str, default='', help='model path')
 parser.add_argument('--dataset', type=str, required=False, help="dataset path",
-                    default='scripts/shapenetcore_partanno_segmentation_benchmark_v0/')
+                    default='../scripts/shapenetcore_partanno_segmentation_benchmark_v0/')
 
 parser.add_argument('--class_choice', type=str, default='Chair', help="class_choice")
 parser.add_argument('--feature_transform', action='store_false', help="use feature transform")
@@ -81,7 +81,7 @@ except OSError:
 
 blue = lambda x: '\033[94m' + x + '\033[0m'
 
-encoder_decoder = Denoiser(feature_transform=opt.feature_transform, hidden_dim=64)
+encoder_decoder = Denoiser(feature_transform=False, hidden_dim=64)
 
 
 if opt.model != '':
@@ -107,16 +107,14 @@ for epoch in range(opt.nepoch):
 
         optimizer.zero_grad()
         encoder_decoder = encoder_decoder.train()
-        pred, trans, trans_feat = encoder_decoder(points)
+        pred = encoder_decoder(points)
         #print(pred.size(), target.size())
         loss = F.MSELoss(pred, target)
-        if opt.feature_transform:
-            loss += feature_transform_regularizer(trans_feat) * 0.001
+        #if opt.feature_transform:
+        #    loss += feature_transform_regularizer(trans_feat) * 0.001
         loss.backward()
         optimizer.step()
-        pred_choice = pred.data.max(1)[1]
-        correct = pred_choice.eq(target.data).cpu().sum()
-        print('[%d: %d/%d] train loss: %f accuracy: %f' % (epoch, i, num_batch, loss.item(), correct.item()/float(opt.batchSize * 2500)))
+        print('[%d: %d/%d] train loss: %f' % (epoch, i, num_batch, loss.item()))
 
         if i % 10 == 0:
             j, data = next(enumerate(testdataloader, 0))
@@ -127,7 +125,7 @@ for epoch in range(opt.nepoch):
                 points, target = points.cuda(), target.cuda()
 
             encoder_decoder = encoder_decoder.eval()
-            pred, _, _ = encoder_decoder(points)
+            pred, = encoder_decoder(points)
             pred = pred.view(-1, num_classes)
             target = target.view(-1, 1)[:, 0] - 1
             loss = F.MSELoss(pred, target)
