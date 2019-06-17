@@ -180,8 +180,9 @@ class Denoiser(nn.Module):
         self.encoder = PointNetEncoder(feature_transform, hidden_dim)
         self.decoder = PointNetDecoder()
     def forward(self, x):
-        x = self.encoder()
-        x = self.decoder()
+        x = self.encoder(x)
+        x = self.decoder(x)
+        return x
 
 
 
