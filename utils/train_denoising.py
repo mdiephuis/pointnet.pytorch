@@ -33,7 +33,7 @@ parser.add_argument('--class_choice', type=str, default='Chair', help="class_cho
 parser.add_argument('--feature_transform', action='store_false', help="use feature transform")
 
 # Device (GPU)
-parser.add_argument('--no-cuda', action='store_true', default=False,
+parser.add_argument('--no-cuda', action='store_true', default=True,
                     help='disables cuda (default: False')
 
 
@@ -64,7 +64,7 @@ test_dataset = ShapeNetDataset(
     classification=False,
     class_choice=[opt.class_choice],
     split='test',
-    data_augmentation=False)
+    data_augmentation=False, denoising = True)
 testdataloader = torch.utils.data.DataLoader(
     test_dataset,
     batch_size=opt.batchSize,
@@ -93,6 +93,8 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.5)
 
 if opt.use_cuda:
     encoder_decoder.cuda()
+else:
+    encoder_decoder.double()
 
 num_batch = len(dataset) / opt.batchSize
 
@@ -101,34 +103,38 @@ for epoch in range(opt.nepoch):
     for i, data in enumerate(dataloader, 0):
         points, target = data
         points = points.transpose(2, 1)
+        target = target.transpose(2,1)
 
         if opt.use_cuda:
             points, target = points.cuda(), target.cuda()
+        else:
+            points, target = points.double(), target.double()
 
         optimizer.zero_grad()
         encoder_decoder = encoder_decoder.train()
         pred = encoder_decoder(points)
         #print(pred.size(), target.size())
-        loss = F.MSELoss(pred, target)
+        loss = F.mse_loss(pred, target)
         #if opt.feature_transform:
         #    loss += feature_transform_regularizer(trans_feat) * 0.001
         loss.backward()
         optimizer.step()
         print('[%d: %d/%d] train loss: %f' % (epoch, i, num_batch, loss.item()))
 
-        if i % 10 == 0:
+        if i % 20 == 0:
             j, data = next(enumerate(testdataloader, 0))
             points, target = data
             points = points.transpose(2, 1)
+            target = target.transpose(2, 1)
 
             if opt.use_cuda:
                 points, target = points.cuda(), target.cuda()
+            else:
+                points, target = points.double(), target.double()
 
             encoder_decoder = encoder_decoder.eval()
-            pred, = encoder_decoder(points)
-            pred = pred.view(-1, num_classes)
-            target = target.view(-1, 1)[:, 0] - 1
-            loss = F.MSELoss(pred, target)
+            pred = encoder_decoder(points)
+            loss = F.mse_loss(pred, target)
 
             print('[%d: %d/%d] %s loss: %f' % (epoch, i, num_batch, blue('test'), loss.item()))
 

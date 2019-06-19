@@ -41,6 +41,8 @@ class STN3d(nn.Module):
         iden = Variable(torch.from_numpy(np.array([1,0,0,0,1,0,0,0,1]).astype(np.float32))).view(1,9).repeat(batchsize,1)
         if x.is_cuda:
             iden = iden.cuda()
+        else:
+            iden = iden.double()
         x = x + iden
         x = x.view(-1, 3, 3)
         return x
@@ -324,11 +326,9 @@ if __name__ == '__main__':
     #
     # print('----------------------------------------')
 
-    encoder = PointNetEncoder()
-    x_out = encoder(sim_data)
-    decoder = PointNetDecoder()
-    x_decoded = decoder(x_out)
-    print(x_decoded.shape)
+    encoder_decoder = Denoiser()
+    x_out = encoder_decoder (sim_data)
+    print(x_out.shape)
     # print('PointNetDenseEncoder')
     # print('sim_data seg in', sim_data.size())
     # print('Output dim, x_out: {}'.format(x_out.size()))
