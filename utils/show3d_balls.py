@@ -2,6 +2,7 @@ import numpy as np
 import ctypes as ct
 import cv2
 import sys
+from pointnet.dataset import ShapeNetDataset
 showsz = 800
 mousex, mousey = 0.5, 0.5
 zoom = 1.0
@@ -161,4 +162,12 @@ def showpoints(xyz,c_gt=None, c_pred = None, waittime=0,
 
 if __name__ == '__main__':
     np.random.seed(100)
-    showpoints(np.random.randn(2500, 3))
+
+    #showpoints(np.random.randn(2500, 3))
+    datapath ='../scripts/shapenetcore_partanno_segmentation_benchmark_v0/'
+    d = ShapeNetDataset(root=datapath, class_choice=['Chair'], denoising=True)
+    print(len(d))
+    ps, seg = d[0]
+    print(ps.size(), ps.type(), seg.size(), seg.type())
+    showpoints(ps.numpy(),ballradius=3)
+    showpoints(seg.numpy(), ballradius=3)

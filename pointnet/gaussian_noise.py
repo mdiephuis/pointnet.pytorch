@@ -5,8 +5,8 @@ def add_gaussian_noise(pointcloud, sigma=0.1, percent_points=0.2):
     ''' The function adds zero-mean Gaussian Noise with variance = sigma
     to random points of a point Cloud, with a given ratior percent_points'''
     N, D = pointcloud.shape
-    noise = np.random.randn(N, D) * sigma  # np.random.normal(mu, sigma, (N,D))
-    noise = normalize(noise)
+    noise = np.random.randn(N, D)  # np.random.normal(mu, sigma, (N,D))
+    noise = normalize(noise) * sigma
 
     # turn off randomly some part of noise, to apply it only to a part of points
     # nums = np.random.choice([0, 1], size=(
