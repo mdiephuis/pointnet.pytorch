@@ -10,6 +10,7 @@ import torch.utils.data
 import torch.nn.functional as F
 from tqdm import tqdm
 import numpy as np
+from logger import Logger
 
 sys.path.append("..")
 
@@ -19,22 +20,23 @@ from pointnet.encoder_decoder_model import Denoiser, feature_transform_regulariz
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    '--batchSize', type=int, default=32, help='input batch size')
+    '--batchSize', type=int, default=12, help='input batch size')
 parser.add_argument(
-    '--workers', type=int, help='number of data loading workers', default=4)
+    '--workers', type=int, help='number of data loading workers', default=1)
 parser.add_argument(
-    '--nepoch', type=int, default=25, help='number of epochs to train for')
-parser.add_argument('--outf', type=str, default='seg', help='output folder')
+    '--nepoch', type=int, default=5, help='number of epochs to train for')
+parser.add_argument('--outf', type=str, default='denoising', help='output folder')
 parser.add_argument('--model', type=str, default='', help='model path')
 parser.add_argument('--dataset', type=str, required=False, help="dataset path",
                     default='../scripts/shapenetcore_partanno_segmentation_benchmark_v0/')
 
-parser.add_argument('--class_choice', type=str, default='Chair', help="class_choice")
+parser.add_argument('--class_choice', type=str, default=None, help="class_choice") #changed for None to get random classes
 parser.add_argument('--feature_transform', action='store_false', help="use feature transform")
-
+parser.add_argument('--num_points', type = int, default = 8000, help='the  size of the points in a cloud')
+parser.add_argument('--log-dir', type = str, default ='./logs')
 # Device (GPU)
-parser.add_argument('--no-cuda', action='store_true', default=True,
-                    help='disables cuda (default: False')
+parser.add_argument('--no-cuda', action='store_true', default=False,
+                    help='disables cuda (default: True')
 
 
 opt = parser.parse_args()
@@ -51,7 +53,7 @@ torch.manual_seed(opt.manualSeed)
 dataset = ShapeNetDataset(
     root=opt.dataset,
     classification=False,
-    class_choice=[opt.class_choice], denoising =True)
+    class_choice=[opt.class_choice], denoising =True, npoints=opt.num_points)
 
 dataloader = torch.utils.data.DataLoader(
     dataset,
@@ -64,7 +66,7 @@ test_dataset = ShapeNetDataset(
     classification=False,
     class_choice=[opt.class_choice],
     split='test',
-    data_augmentation=False, denoising = True)
+    data_augmentation=False, denoising = True, npoints= opt.num_points)
 testdataloader = torch.utils.data.DataLoader(
     test_dataset,
     batch_size=opt.batchSize,
@@ -87,7 +89,7 @@ encoder_decoder = Denoiser(feature_transform=False, hidden_dim=64)
 if opt.model != '':
     encoder_decoder.load_state_dict(torch.load(opt.model))
 
-optimizer = optim.Adam(encoder_decoder.parameters(), lr=0.001, betas=(0.9, 0.999))
+optimizer = optim.Adam(encoder_decoder.parameters(), lr=0.001, betas=(0.9, 0.999), weight_decay=0.00001)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.5)
 
 
@@ -97,6 +99,8 @@ else:
     encoder_decoder.double()
 
 num_batch = len(dataset) / opt.batchSize
+logger = Logger(opt.log_dir)
+
 
 for epoch in range(opt.nepoch):
     scheduler.step()
@@ -113,7 +117,6 @@ for epoch in range(opt.nepoch):
         optimizer.zero_grad()
         encoder_decoder = encoder_decoder.train()
         pred = encoder_decoder(points)
-        #print(pred.size(), target.size())
         loss = F.mse_loss(pred, target)
         #if opt.feature_transform:
         #    loss += feature_transform_regularizer(trans_feat) * 0.001
@@ -121,7 +124,13 @@ for epoch in range(opt.nepoch):
         optimizer.step()
         print('[%d: %d/%d] train loss: %f' % (epoch, i, num_batch, loss.item()))
 
-        if i % 20 == 0:
+        # tboard
+        # 1. Log scalar values (scalar summary)
+        info = {'training loss': loss.item()}
+        for tag, value in info.items():
+            logger.scalar_summary(tag, value, epoch * num_batch +i)
+
+        if i % 10 == 0:
             j, data = next(enumerate(testdataloader, 0))
             points, target = data
             points = points.transpose(2, 1)
@@ -137,36 +146,10 @@ for epoch in range(opt.nepoch):
             loss = F.mse_loss(pred, target)
 
             print('[%d: %d/%d] %s loss: %f' % (epoch, i, num_batch, blue('test'), loss.item()))
+            # 1. Log scalar values (scalar summary)
+            info = {'testing loss': loss.item()}
+            for tag, value in info.items():
+                logger.scalar_summary(tag, value, epoch * num_batch +i)
 
     torch.save(encoder_decoder.state_dict(), '%s/denoising_model_%s_%d.pth' % (opt.outf, opt.class_choice, epoch))
 
-# ## benchmark mIOU
-# shape_ious = []
-# for i,data in tqdm(enumerate(testdataloader, 0)):
-#     points, target = data
-#     points = points.transpose(2, 1)
-#
-#     if opt.use_cuda:
-#         points, target = points.cuda(), target.cuda()
-#
-#     encoder_decoder = encoder_decoder.eval()
-#     pred, _, _ = encoder_decoder(points)
-#     pred_choice = pred.data.max(2)[1]
-#
-#     pred_np = pred_choice.cpu().data.numpy()
-#     target_np = target.cpu().data.numpy() - 1
-#
-#     for shape_idx in range(target_np.shape[0]):
-#         parts = range(num_classes)#np.unique(target_np[shape_idx])
-#         part_ious = []
-#         for part in parts:
-#             I = np.sum(np.logical_and(pred_np[shape_idx] == part, target_np[shape_idx] == part))
-#             U = np.sum(np.logical_or(pred_np[shape_idx] == part, target_np[shape_idx] == part))
-#             if U == 0:
-#                 iou = 1 #If the union of groundtruth and prediction points is empty, then count part IoU as 1
-#             else:
-#                 iou = I / float(U)
-#             part_ious.append(iou)
-#         shape_ious.append(np.mean(part_ious))
-#
-# print("mIOU for class {}: {}".format(opt.class_choice, np.mean(shape_ious)))
