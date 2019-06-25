@@ -78,7 +78,8 @@ class ShapeNetDataset(data.Dataset):
                 ls = line.strip().split()
                 self.cat[ls[0]] = ls[1]
         #print(self.cat)
-        if not class_choice is None:
+
+        if not class_choice is None and not class_choice[0] is None:
             self.cat = {k: v for k, v in self.cat.items() if k in class_choice}
 
         self.id2cat = {v: k for k, v in self.cat.items()}
@@ -204,7 +205,7 @@ if __name__ == '__main__':
     datapath = sys.argv[2]
 
     if dataset == 'shapenet':
-        d = ShapeNetDataset(root = datapath, class_choice = ['Chair'], denoising =True)
+        d = ShapeNetDataset(root = datapath, class_choice = None, denoising =True)
         print(len(d))
         ps, seg = d[0]
         print(ps.size(), ps.type(), seg.size(),seg.type())

@@ -26,16 +26,16 @@ parser.add_argument(
 parser.add_argument(
     '--nepoch', type=int, default=5, help='number of epochs to train for')
 parser.add_argument('--outf', type=str, default='denoising', help='output folder')
-parser.add_argument('--model', type=str, default='', help='model path')
+parser.add_argument('--model', type=str, default="", help='model path')
 parser.add_argument('--dataset', type=str, required=False, help="dataset path",
                     default='../scripts/shapenetcore_partanno_segmentation_benchmark_v0/')
 
-parser.add_argument('--class_choice', type=str, default=None, help="class_choice") #changed for None to get random classes
+parser.add_argument('--class_choice', type=str, default= None, help="class_choice") #changed for None to get random classes
 parser.add_argument('--feature_transform', action='store_false', help="use feature transform")
 parser.add_argument('--num_points', type = int, default = 8000, help='the  size of the points in a cloud')
 parser.add_argument('--log-dir', type = str, default ='./logs')
 # Device (GPU)
-parser.add_argument('--no-cuda', action='store_true', default=False,
+parser.add_argument('--no-cuda', action='store_true', default=True,
                     help='disables cuda (default: True')
 
 
